@@ -40,8 +40,34 @@ with st.sidebar:
 
     map_theme_list = ['carto-darkmatter', 'carto-positron', 'open-street-map']
     selected_map_theme = st.selectbox('Select a map theme', map_theme_list)
+    
+    cont_theme_list =  ['ice', 'aggrnyl', 'amp', 'blues', 
+                        'blugrn', 'bluyl', 'brbg', 'brwnyl', 'bugn', 'bupu', 
+                        'delta', 'dense', 'earth', 'edge', 'haline', 'peach', 'phase', 'prgn', 
+                        'hot', 'hsv', 'icefire', 'inferno', 'jet', 'magenta', 'magma', 
+                        'pubu', 'pubugn', 'puor', 'purd', 'purp', 'purples', 'purpor',
+                        'redor', 'reds', 'solar', 'spectral', 'speed', 'sunset', 'sunsetdark', 
+                        'thermal', 'tropic', 'turbid', 'turbo', 'twilight', 'viridis',]
+    discrete_color_themes = [
+    ('Plotly', px.colors.qualitative.Plotly),
+    ('Alphabet', px.colors.qualitative.Alphabet),  
+    ('Bold', px.colors.qualitative.Bold),      
+    ('Dark24', px.colors.qualitative.Dark24),    
+    ('Light24', px.colors.qualitative.Light24),   
+    ('Plotly', px.colors.qualitative.Plotly),    
+    ('Pastel', px.colors.qualitative.Pastel),   
+    ('Safe', px.colors.qualitative.Safe),      
+    ('Set1', px.colors.qualitative.Set1),     
+    ('Set2', px.colors.qualitative.Set2),      
+    ('Set3', px.colors.qualitative.Set3),      
+    ('T10', px.colors.qualitative.T10),       
+    ('Vivid', px.colors.qualitative.Vivid)     
+    ]   
+    selected_cont_theme = st.selectbox('Select a continuous scale theme', cont_theme_list)
+    selected_theme = st.selectbox("Select a color theme:", [theme[0] for theme in discrete_color_themes])
+    selected_color_sequence = [theme[1] for theme in discrete_color_themes if theme[0] == selected_theme][0]
 
-def make_choropleth(input_df, total_df, input_id, input_column, map_theme):
+def make_choropleth(input_df, total_df, input_id, input_column, map_theme, plot_theme):
 
     with open('us-states.json', 'r') as f:
         states = json.load(f)
@@ -50,7 +76,7 @@ def make_choropleth(input_df, total_df, input_id, input_column, map_theme):
         total_df,
         geojson=states,
         locations=input_id,
-        color_continuous_scale="Ice",    
+        color_continuous_scale=plot_theme,    
         color= input_column,
         mapbox_style=map_theme,  
         zoom=3,  # Set the initial zoom level,
@@ -110,7 +136,7 @@ with st.expander('About', expanded=True):
 col2 = st.columns((15, 5), gap='medium')
 with col2[0]:
     st.markdown('#### Total Sales by State with Order Locations')
-    choropleth = make_choropleth(df_selected_year, df_selected_total, 'State', 'Sales', selected_map_theme)
+    choropleth = make_choropleth(df_selected_year, df_selected_total, 'State', 'Sales', selected_map_theme, selected_cont_theme)
     st.plotly_chart(choropleth, use_container_width=True)
 
 with col2[1]:
@@ -136,7 +162,7 @@ col = st.columns([2, 1, 4], gap='medium')
 
 with col[0]:
     st.markdown('#### Sales by Category')
-    fig = px.sunburst(df_selected_year, path=['Category', 'Sub-Category'], values='Sales')
+    fig = px.sunburst(df_selected_year, path=['Category', 'Sub-Category'], values='Sales', color_discrete_sequence=selected_color_sequence)
     st.plotly_chart(fig, use_container_width=True)
     fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
 
@@ -171,8 +197,7 @@ with col[2]:
 
     new_df = data.groupby(["State","Ship Date"])["Sales"].sum().reset_index()
     new_df  = new_df.pivot(index='Ship Date', columns='State')['Sales'].fillna(0)
-    fig = px.imshow(new_df, x=new_df.columns, y=new_df.index, color_continuous_scale = "IceFire"
-)
+    fig = px.imshow(new_df, x=new_df.columns, y=new_df.index, color_continuous_scale = selected_cont_theme)
     fig.update_layout(
         xaxis=dict(title="State"),
         yaxis=dict(title="Ship Date"),
