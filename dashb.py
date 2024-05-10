@@ -125,7 +125,7 @@ def format_number(num):
         return f'{round(num / 1000000, 1)} M'
     return f'{num // 1000} K'
 
-st.header('US Sales Dashboard', divider = 'blue')
+st.header('📈 US Sales Dashboard', divider = 'blue')
 with st.expander('About', expanded=True):
     st.write('''
         - Data: [Kaggle](<https://www.kaggle.com/datasets/sulaimanahmed/sales-dataset-of-usa-updated>).
