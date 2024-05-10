@@ -12,4 +12,21 @@ This Streamlit dashboard visualizes US sales data using Plotly graphs. It provid
 ### Prerequisites
 Make sure you have Python installed on your system. You can download Python from [here](https://www.python.org/downloads/).
 
-# ...
+### Installation
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/4rnab20/Python-Dashboard
+    ```
+2. Navigate to the project directory:
+    ```bash
+    cd Python-Dashboard
+    ```
+
+### Usage
+1. Run the Streamlit app:
+    ```bash
+    streamlit run app.py
+    ```
+2. Open the provided URL in your web browser to access the dashboard.
+
+---
