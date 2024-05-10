@@ -144,7 +144,24 @@ with col[1]:
     
     choropleth = make_choropleth(df_selected_year, df_selected_total, 'State', 'Sales', selected_map_theme)
     st.plotly_chart(choropleth, use_container_width=True)
+    
+    st.markdown('#### Total Sales Heatmap by Year and State')
 
+    new_df = data.groupby(["State","Ship Date"])["Sales"].sum().reset_index()
+    new_df  = new_df.pivot(index='Ship Date', columns='State')['Sales'].fillna(0)
+    fig = px.imshow(new_df, x=new_df.columns, y=new_df.index)
+    fig.update_layout(
+        xaxis=dict(title="State"),
+        yaxis=dict(title="Ship Date"),
+        coloraxis_colorbar=dict(title="Sales"),
+        paper_bgcolor='black',  # Set the overall background color to black
+        font=dict(color='white'),  # Set font color to white
+        margin=dict(l=10, r=10, t=10, b=10),  # Adjust the left, right, top, and bottom margins
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
+    # Show the plot
 with col[2]:
     st.markdown('#### Top States')
 
