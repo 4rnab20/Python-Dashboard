@@ -5,7 +5,6 @@ This Streamlit dashboard visualizes US sales data using Plotly graphs. It provid
 
 ## Features
 - Interactive Plotly graphs for visualizing sales data.
-- Filtering options to analyze sales based on states and product categories.
 - Customizable settings to adjust the display of graphs.
 
 ## Getting Started
