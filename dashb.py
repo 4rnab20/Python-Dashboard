@@ -27,14 +27,6 @@ data = pd.merge(data, city_data[["City", "State", "lat", "lng"]], on=['City', 'S
 data['Sales'] = pd.to_numeric(data['Sales'])
 data['Ship Date'] = pd.to_datetime(data['Ship Date'], format="%d/%m/%Y").dt.year
 total_sales_by_state = data.groupby('State')['Sales'].sum().reset_index()
-
-st.header('US Sales Dashboard', divider = 'blue')
-with st.expander('About', expanded=True):
-    st.write('''
-        - Data: [Kaggle](<https://www.kaggle.com/datasets/sulaimanahmed/sales-dataset-of-usa-updated>).
-        - :orange[**Sales Gains/Losses**]: Shows the fluctuation in sales over consecutive years to identify gains or losses in revenue trends.
-        - :red[**Total Sales by State with Order Locations**]: Visualizes total sales by state with order locations represented by cities.
-        ''')
         
 with st.sidebar:
     st.title('Select Parameters')
@@ -68,8 +60,6 @@ def make_choropleth(input_df, total_df, input_id, input_column, map_theme):
     )
 
     fig.update_layout(
-        paper_bgcolor='black',  # Set the overall background color to black
-        font=dict(color='white'),  # Set font color to white
         margin=dict(l=10, r=10, t=10, b=10),  # Adjust the left, right, top, and bottom margins
         legend=dict(
             title = "Ship Mode",
@@ -109,55 +99,52 @@ def format_number(num):
         return f'{round(num / 1000000, 1)} M'
     return f'{num // 1000} K'
 
-col = st.columns((10, 4), gap='medium')
+st.header('US Sales Dashboard', divider = 'blue')
+with st.expander('About', expanded=True):
+    st.write('''
+        - Data: [Kaggle](<https://www.kaggle.com/datasets/sulaimanahmed/sales-dataset-of-usa-updated>).
+        - :orange[**Sales Gains/Losses**]: Shows the fluctuation in sales over consecutive years to identify gains or losses in revenue trends.
+        - :red[**Total Sales by State with Order Locations**]: Visualizes total sales by state with order locations represented by cities.
+        ''')
 
-with col[0]:
+col2 = st.columns((15, 5), gap='medium')
+with col2[0]:
     st.markdown('#### Total Sales by State with Order Locations')
-    
     choropleth = make_choropleth(df_selected_year, df_selected_total, 'State', 'Sales', selected_map_theme)
     st.plotly_chart(choropleth, use_container_width=True)
-    
-    st.markdown('#### Total Sales Heatmap by Year and State')
 
-    new_df = data.groupby(["State","Ship Date"])["Sales"].sum().reset_index()
-    new_df  = new_df.pivot(index='Ship Date', columns='State')['Sales'].fillna(0)
-    fig = px.imshow(new_df, x=new_df.columns, y=new_df.index, color_continuous_scale = "IceFire"
-)
-    fig.update_layout(
-        xaxis=dict(title="State"),
-        yaxis=dict(title="Ship Date"),
-        coloraxis_colorbar=dict(title="Sales"),
-        paper_bgcolor='black',  # Set the overall background color to black
-        font=dict(color='white'),  # Set font color to white
-        margin=dict(l=10, r=10, t=10, b=10),  # Adjust the left, right, top, and bottom margins
-    )
-    st.plotly_chart(fig, use_container_width=True)
-
-
-    # Show the plot
-with col[1]:
+with col2[1]:
     st.markdown('#### Top States')
-
     st.dataframe(df_selected_total.sort_values(by="Sales", ascending=False),
-                 column_order=("State", "Sales"),
-                 width=800, 
-                 height= 450, 
-                 hide_index=True,
-                 column_config={
-                    "State": st.column_config.TextColumn(
-                        "State",
-                    ),
-                    "Sales": st.column_config.ProgressColumn(
-                        "Sales",
-                        format="%i",
-                        min_value=0,
-                        max_value=max(df_selected_total.Sales),
-                     )}
-                 )
-    st.markdown('#### Sales Gains/Losses')
+    column_order=("State", "Sales"),
+    width=800, 
+    height= 450, 
+    hide_index=True,
+    column_config={
+    "State": st.column_config.TextColumn(
+        "State",
+    ),
+    "Sales": st.column_config.ProgressColumn(
+        "Sales",
+        format="%i",
+        min_value=0,
+        max_value=max(df_selected_total.Sales),
+        )}
+    )
 
+col = st.columns([2, 1, 4], gap='medium')
+
+with col[0]:
+    st.markdown('#### Sales by Category')
+    fig = px.sunburst(df_selected_year, path=['Category', 'Sub-Category'], values='Sales')
+    st.plotly_chart(fig, use_container_width=True)
+    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+
+with col[1]:
+
+    st.markdown('#### Gains/Losses')
     df_sales_difference_sorted = calculate_sales_difference(data, selected_year)
-    st.markdown('##### max gain/loss:')
+    st.markdown('###### max gain/loss:')
     if selected_year > 2015:
         first_state_name = df_sales_difference_sorted.State.iloc[0]
         first_state_sales = format_number(df_sales_difference_sorted.Sales.iloc[0])
@@ -178,3 +165,18 @@ with col[1]:
         first_state_sales = '-'
         last_state_delta = ''
     st.metric(label=last_state_name, value=first_state_sales, delta=last_state_delta)
+
+with col[2]:
+    st.markdown('#### Total Sales Heatmap by Year and State')
+
+    new_df = data.groupby(["State","Ship Date"])["Sales"].sum().reset_index()
+    new_df  = new_df.pivot(index='Ship Date', columns='State')['Sales'].fillna(0)
+    fig = px.imshow(new_df, x=new_df.columns, y=new_df.index, color_continuous_scale = "IceFire"
+)
+    fig.update_layout(
+        xaxis=dict(title="State"),
+        yaxis=dict(title="Ship Date"),
+        coloraxis_colorbar=dict(title="Sales"),
+        margin=dict(l=10, r=10, t=10, b=10),  # Adjust the left, right, top, and bottom margins
+    )
+    st.plotly_chart(fig, use_container_width=True)
