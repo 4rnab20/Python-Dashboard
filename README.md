@@ -11,3 +11,5 @@ This Streamlit dashboard visualizes US sales data using Plotly graphs. It provid
 ## Getting Started
 ### Prerequisites
 Make sure you have Python installed on your system. You can download Python from [here](https://www.python.org/downloads/).
+
+#...
