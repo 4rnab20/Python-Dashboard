@@ -6,12 +6,11 @@ import plotly.io as pio
 import plotly.express as px
 import plotly.graph_objects as go
 import json
-from urllib.request import urlopen
 import streamlit as st
 import pandas as pd
 import altair as alt
 import plotly.express as px
-from datetime import datetime
+
 
 st.set_page_config(
     page_title="US Sales Dashboard",
@@ -29,9 +28,16 @@ data['Sales'] = pd.to_numeric(data['Sales'])
 data['Ship Date'] = pd.to_datetime(data['Ship Date'], format="%d/%m/%Y").dt.year
 total_sales_by_state = data.groupby('State')['Sales'].sum().reset_index()
 
-
+st.header('US Sales Dashboard', divider = 'blue')
+with st.expander('About', expanded=True):
+    st.write('''
+        - Data: [Kaggle](<https://www.kaggle.com/datasets/sulaimanahmed/sales-dataset-of-usa-updated>).
+        - :orange[**Sales Gains/Losses**]: Shows the fluctuation in sales over consecutive years to identify gains or losses in revenue trends.
+        - :red[**Total Sales by State with Order Locations**]: Visualizes total sales by state with order locations represented by cities.
+        ''')
+        
 with st.sidebar:
-    st.title('US Sales Dashboard')
+    st.title('Select Parameters')
     
     year_list = list(data['Ship Date'].unique())[::-1]
     
@@ -40,7 +46,7 @@ with st.sidebar:
     df_selected_year_sorted = df_selected_year.sort_values(by="Sales", ascending=False)
     df_selected_total = df_selected_year.groupby('State')['Sales'].sum().reset_index()
 
-    map_theme_list = ['open-street-map', 'carto-positron', 'carto-darkmatter']
+    map_theme_list = ['carto-darkmatter', 'carto-positron', 'open-street-map']
     selected_map_theme = st.selectbox('Select a map theme', map_theme_list)
 
 def make_choropleth(input_df, total_df, input_id, input_column, map_theme):
@@ -66,6 +72,7 @@ def make_choropleth(input_df, total_df, input_id, input_column, map_theme):
         font=dict(color='white'),  # Set font color to white
         margin=dict(l=10, r=10, t=10, b=10),  # Adjust the left, right, top, and bottom margins
         legend=dict(
+            title = "Ship Mode",
             y=0.99,
             x=0.01,
             bgcolor="rgba(0,0,0,0.5)",
@@ -90,56 +97,21 @@ def make_choropleth(input_df, total_df, input_id, input_column, map_theme):
     return fig
 
 def calculate_sales_difference(input_df, input_year):
-  selected_year_data = input_df[input_df['Ship Date'] == input_year].reset_index()
-  previous_year_data = input_df[input_df['Ship Date'] == input_year - 1].reset_index()
+  selected_year_data = input_df[input_df['Ship Date'] == input_year].groupby('State')['Sales'].sum().reset_index()
+  previous_year_data = input_df[input_df['Ship Date'] == input_year - 1].groupby('State')['Sales'].sum().reset_index()
   selected_year_data['sales_difference'] = selected_year_data.Sales.sub(previous_year_data.Sales, fill_value=0)
   return pd.concat([selected_year_data.State, selected_year_data.Sales, selected_year_data.sales_difference], axis=1).sort_values(by="sales_difference", ascending=False)
 
-def make_donut(input_response, input_text, input_color):
-  if input_color == 'blue':
-      chart_color = ['#29b5e8', '#155F7A']
-  if input_color == 'green':
-      chart_color = ['#27AE60', '#12783D']
-  if input_color == 'orange':
-      chart_color = ['#F39C12', '#875A12']
-  if input_color == 'red':
-      chart_color = ['#E74C3C', '#781F16']
-    
-  source = pd.DataFrame({
-      "Topic": ['', input_text],
-      "% value": [100-input_response, input_response]
-  })
-  source_bg = pd.DataFrame({
-      "Topic": ['', input_text],
-      "% value": [100, 0]
-  })
-    
-  plot = alt.Chart(source).mark_arc(innerRadius=45, cornerRadius=25).encode(
-      theta="% value",
-      color= alt.Color("Topic:N",
-                      scale=alt.Scale(
-                          #domain=['A', 'B'],
-                          domain=[input_text, ''],
-                          # range=['#29b5e8', '#155F7A']),  # 31333F
-                          range=chart_color),
-                      legend=None),
-  ).properties(width=130, height=130)
-    
-  text = plot.mark_text(align='center', color="#29b5e8", font="Lato", fontSize=32, fontWeight=700, fontStyle="italic").encode(text=alt.value(f'{input_response} %'))
-  plot_bg = alt.Chart(source_bg).mark_arc(innerRadius=45, cornerRadius=20).encode(
-      theta="% value",
-      color= alt.Color("Topic:N",
-                      scale=alt.Scale(
-                          # domain=['A', 'B'],
-                          domain=[input_text, ''],
-                          range=chart_color),  # 31333F
-                      legend=None),
-  ).properties(width=130, height=130)
-  return plot_bg + plot + text
+def format_number(num):
+    if abs(num) > 1000000:
+        if not abs(num) % 1000000:
+            return f'{num // 1000000} M'
+        return f'{round(num / 1000000, 1)} M'
+    return f'{num // 1000} K'
 
-col = st.columns((1.5, 10, 4), gap='small')
+col = st.columns((10, 4), gap='medium')
 
-with col[1]:
+with col[0]:
     st.markdown('#### Total Sales by State with Order Locations')
     
     choropleth = make_choropleth(df_selected_year, df_selected_total, 'State', 'Sales', selected_map_theme)
@@ -149,7 +121,8 @@ with col[1]:
 
     new_df = data.groupby(["State","Ship Date"])["Sales"].sum().reset_index()
     new_df  = new_df.pivot(index='Ship Date', columns='State')['Sales'].fillna(0)
-    fig = px.imshow(new_df, x=new_df.columns, y=new_df.index)
+    fig = px.imshow(new_df, x=new_df.columns, y=new_df.index, color_continuous_scale = "IceFire"
+)
     fig.update_layout(
         xaxis=dict(title="State"),
         yaxis=dict(title="Ship Date"),
@@ -162,12 +135,13 @@ with col[1]:
 
 
     # Show the plot
-with col[2]:
+with col[1]:
     st.markdown('#### Top States')
 
     st.dataframe(df_selected_total.sort_values(by="Sales", ascending=False),
                  column_order=("State", "Sales"),
-                 width=800,  
+                 width=800, 
+                 height= 450, 
                  hide_index=True,
                  column_config={
                     "State": st.column_config.TextColumn(
@@ -180,8 +154,27 @@ with col[2]:
                         max_value=max(df_selected_total.Sales),
                      )}
                  )
+    st.markdown('#### Sales Gains/Losses')
+
+    df_sales_difference_sorted = calculate_sales_difference(data, selected_year)
+    st.markdown('##### max gain/loss:')
+    if selected_year > 2015:
+        first_state_name = df_sales_difference_sorted.State.iloc[0]
+        first_state_sales = format_number(df_sales_difference_sorted.Sales.iloc[0])
+        first_state_delta = format_number(df_sales_difference_sorted.sales_difference.iloc[0])
+    else:
+        first_state_name = '-'
+        first_state_sales = '-'
+        first_state_delta = ''
+    st.metric(label=first_state_name, value=first_state_sales, delta=first_state_delta)
     
-    with st.expander('About', expanded=True):
-        st.write('''
-            - Data: [Kaggle](<https://www.kaggle.com/datasets/sulaimanahmed/sales-dataset-of-usa-updated>).
-            ''')
+    st.markdown('##### min gain/loss:')
+    if selected_year > 2015:
+        last_state_name = df_sales_difference_sorted.State.iloc[-1]
+        first_state_sales = format_number(df_sales_difference_sorted.Sales.iloc[-1])   
+        last_state_delta = format_number(df_sales_difference_sorted.sales_difference.iloc[-1])   
+    else:
+        last_state_name = '-'
+        first_state_sales = '-'
+        last_state_delta = ''
+    st.metric(label=last_state_name, value=first_state_sales, delta=last_state_delta)
