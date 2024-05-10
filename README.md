@@ -25,7 +25,7 @@ Make sure you have Python installed on your system. You can download Python from
 ### Usage
 1. Run the Streamlit app:
     ```bash
-    streamlit run app.py
+    streamlit run dashb.py
     ```
 2. Open the provided URL in your web browser to access the dashboard.
 
